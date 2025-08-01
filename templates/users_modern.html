@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - SMS Broadcasting</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/modern.css') }}" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg fixed-top glass-nav">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
+                <div class="brand-icon me-2">
+                    <i class="fas fa-sms text-white"></i>
+                </div>
+                SMS Broadcasting
+            </a>
+            
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="fas fa-home me-1"></i>Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('campaigns') }}">
+                            <i class="fas fa-paper-plane me-1"></i>Campaigns
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('statistics') }}">
+                            <i class="fas fa-chart-bar me-1"></i>Statistics
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('users') }}">
+                            <i class="fas fa-users me-1"></i>Users
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="hero-section" style="padding: 120px 0 40px; margin-top: 80px;">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <h1 class="hero-title">User Management</h1>
+                    <p class="hero-subtitle">Capture and manage user details with CSV export functionality</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mb-5">
+        <div class="row">
+            <!-- Add User Form -->
+            <div class="col-lg-6 mb-4">
+                <div class="glass-card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-user-plus me-2"></i>Add New User
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="userForm">
+                            <div class="mb-3">
+                                <label for="fullName" class="form-label">Full Name</label>
+                                <input type="text" class="form-control glass-input" id="fullName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" class="form-control glass-input" id="email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control glass-input" id="phone" placeholder="+233XXXXXXXXX" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="company" class="form-label">Company/Organization</label>
+                                <input type="text" class="form-control glass-input" id="company">
+                            </div>
+                            <div class="mb-3">
+                                <label for="location" class="form-label">Location</label>
+                                <input type="text" class="form-control glass-input" id="location" placeholder="City, Region">
+                            </div>
+                            <div class="mb-3">
+                                <label for="category" class="form-label">Category</label>
+                                <select class="form-select glass-input" id="category">
+                                    <option value="">Select Category</option>
+                                    <option value="Customer">Customer</option>
+                                    <option value="Subscriber">Subscriber</option>
+                                    <option value="Partner">Business Partner</option>
+                                    <option value="Lead">Lead</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="notes" class="form-label">Notes</label>
+                                <textarea class="form-control glass-input" id="notes" rows="3" placeholder="Additional information..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-plus me-2"></i>Add User
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User List and Export -->
+            <div class="col-lg-6 mb-4">
+                <div class="glass-card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-users me-2"></i>User Database
+                        </h5>
+                        <div class="btn-group">
+                            <button class="btn btn-success btn-sm" id="exportCsvBtn">
+                                <i class="fas fa-download me-1"></i>Export CSV
+                            </button>
+                            <button class="btn btn-warning btn-sm" id="clearUsersBtn">
+                                <i class="fas fa-trash me-1"></i>Clear All
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="userStats" class="mb-3">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <div class="stat-item">
+                                        <h4 class="stat-number" id="totalUsers">0</h4>
+                                        <p class="stat-label">Total Users</p>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="stat-item">
+                                        <h4 class="stat-number" id="categoriesCount">0</h4>
+                                        <p class="stat-label">Categories</p>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="stat-item">
+                                        <h4 class="stat-number" id="companiesCount">0</h4>
+                                        <p class="stat-label">Companies</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <input type="text" class="form-control glass-input" id="searchUsers" placeholder="Search users...">
+                        </div>
+                        
+                        <div id="usersList" class="users-list">
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-users fa-3x mb-3 opacity-50"></i>
+                                <p>No users added yet. Start by adding your first user above.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bulk Import Section -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="glass-card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-upload me-2"></i>Bulk Import from CSV
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <p class="text-muted mb-3">Upload a CSV file with user data. Required columns: Full Name, Email, Phone</p>
+                                <div class="mb-3">
+                                    <input type="file" class="form-control glass-input" id="csvFileInput" accept=".csv">
+                                </div>
+                                <button class="btn btn-primary" id="importCsvBtn">
+                                    <i class="fas fa-upload me-2"></i>Import CSV
+                                </button>
+                            </div>
+                            <div class="col-lg-6">
+                                <h6>CSV Format Example:</h6>
+                                <div class="bg-dark bg-opacity-25 p-3 rounded">
+                                    <code class="text-light">
+                                        Full Name,Email,Phone,Company,Location,Category,Notes<br>
+                                        John Doe,john@example.com,+233501234567,ABC Corp,Accra,Customer,VIP client<br>
+                                        Jane Smith,jane@example.com,+233507654321,XYZ Ltd,Kumasi,Partner,
+                                    </code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="successToast" class="toast" role="alert">
+            <div class="toast-header bg-success text-white">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong class="me-auto">Success</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="successMessage">
+                User added successfully!
+            </div>
+        </div>
+        
+        <div id="errorToast" class="toast" role="alert">
+            <div class="toast-header bg-danger text-white">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong class="me-auto">Error</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="errorMessage">
+                Please fill in all required fields.
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/localStorage.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/users.js') }}"></script>
+</body>
+</html>

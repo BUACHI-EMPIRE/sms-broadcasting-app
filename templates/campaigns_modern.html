@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaign History - Modern SMS Broadcasting</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark glass-nav fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold d-flex align-items-center" href="{{ url_for('index') }}">
+                <div class="brand-icon">
+                    <i class="fas fa-paper-plane"></i>
+                </div>
+                <span class="ms-2">SMS Broadcaster</span>
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('index') }}">
+                    <i class="fas fa-home me-1"></i>Home
+                </a>
+                <a class="nav-link active" href="{{ url_for('campaigns') }}">
+                    <i class="fas fa-list me-1"></i>Campaigns
+                </a>
+                <a class="nav-link" href="{{ url_for('statistics') }}">
+                    <i class="fas fa-chart-bar me-1"></i>Statistics
+                </a>
+                <a class="nav-link" href="{{ url_for('users') }}">
+                    <i class="fas fa-users me-1"></i>Users
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="hero-section" style="padding: 120px 0 40px; margin-top: 80px;">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <div class="hero-content">
+                        <h1 class="hero-title" style="font-size: 2.5rem;">
+                            <i class="fas fa-history me-3"></i>
+                            Campaign History
+                        </h1>
+                        <p class="hero-subtitle">
+                            Track and manage all your SMS broadcasting campaigns
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container main-content">
+        <!-- Search and Filters -->
+        <div class="glass-card mb-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-search me-2"></i>
+                                Search Campaigns
+                            </label>
+                            <input type="text" id="searchInput" class="form-control" placeholder="Search by message or campaign ID...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-filter me-2"></i>
+                                Filter by Status
+                            </label>
+                            <select id="statusFilter" class="form-control">
+                                <option value="">All Campaigns</option>
+                                <option value="success">Successful</option>
+                                <option value="partial">Partial Success</option>
+                                <option value="failed">Failed</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-calendar me-2"></i>
+                                Show Last
+                            </label>
+                            <select id="dateFilter" class="form-control">
+                                <option value="all">All Time</option>
+                                <option value="7">Last 7 Days</option>
+                                <option value="30">Last 30 Days</option>
+                                <option value="90">Last 90 Days</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Campaigns List -->
+        <div class="glass-card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title">
+                        <i class="fas fa-bullhorn me-2"></i>
+                        Your Campaigns
+                        <span id="campaignCount" class="badge bg-primary ms-2">0</span>
+                    </h5>
+                    <div>
+                        <button class="btn btn-outline-primary btn-sm me-2" onclick="exportData()">
+                            <i class="fas fa-download me-2"></i>Export
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="clearAllData()">
+                            <i class="fas fa-trash me-2"></i>Clear All
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="campaignsList">
+                    <!-- Campaigns will be loaded here -->
+                </div>
+                
+                <!-- Empty State -->
+                <div id="emptyState" class="text-center py-5" style="display: none;">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5 class="text-white">No campaigns found</h5>
+                    <p class="text-muted">Start by creating your first SMS campaign</p>
+                    <a href="{{ url_for('index') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>
+                        Create Campaign
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Campaign Details Modal -->
+    <div class="modal fade" id="campaignModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.2);">
+                <div class="modal-header" style="border-bottom: 1px solid rgba(255, 255, 255, 0.2);">
+                    <h5 class="modal-title text-white">
+                        <i class="fas fa-eye me-2"></i>
+                        Campaign Details
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalContent">
+                    <!-- Campaign details will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/localStorage.js') }}"></script>
+    <script>
+        class CampaignManager {
+            constructor() {
+                this.campaigns = [];
+                this.filteredCampaigns = [];
+                this.init();
+            }
+
+            init() {
+                this.loadCampaigns();
+                this.bindEvents();
+                this.displayCampaigns();
+            }
+
+            bindEvents() {
+                document.getElementById('searchInput').addEventListener('input', () => this.filterCampaigns());
+                document.getElementById('statusFilter').addEventListener('change', () => this.filterCampaigns());
+                document.getElementById('dateFilter').addEventListener('change', () => this.filterCampaigns());
+            }
+
+            loadCampaigns() {
+                this.campaigns = window.smsStorage.getCampaigns();
+                this.filteredCampaigns = [...this.campaigns];
+            }
+
+            filterCampaigns() {
+                const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+                const statusFilter = document.getElementById('statusFilter').value;
+                const dateFilter = document.getElementById('dateFilter').value;
+
+                this.filteredCampaigns = this.campaigns.filter(campaign => {
+                    // Search filter
+                    const matchesSearch = !searchQuery || 
+                        campaign.message.toLowerCase().includes(searchQuery) ||
+                        campaign.id.toLowerCase().includes(searchQuery);
+
+                    // Status filter
+                    let matchesStatus = true;
+                    if (statusFilter) {
+                        if (statusFilter === 'success') {
+                            matchesStatus = campaign.failed_sends === 0 && campaign.successful_sends > 0;
+                        } else if (statusFilter === 'partial') {
+                            matchesStatus = campaign.successful_sends > 0 && campaign.failed_sends > 0;
+                        } else if (statusFilter === 'failed') {
+                            matchesStatus = campaign.successful_sends === 0;
+                        }
+                    }
+
+                    // Date filter
+                    let matchesDate = true;
+                    if (dateFilter && dateFilter !== 'all') {
+                        const campaignDate = new Date(campaign.created_at);
+                        const cutoff = new Date();
+                        cutoff.setDate(cutoff.getDate() - parseInt(dateFilter));
+                        matchesDate = campaignDate >= cutoff;
+                    }
+
+                    return matchesSearch && matchesStatus && matchesDate;
+                });
+
+                this.displayCampaigns();
+            }
+
+            displayCampaigns() {
+                const container = document.getElementById('campaignsList');
+                const emptyState = document.getElementById('emptyState');
+                const countBadge = document.getElementById('campaignCount');
+
+                countBadge.textContent = this.filteredCampaigns.length;
+
+                if (this.filteredCampaigns.length === 0) {
+                    container.innerHTML = '';
+                    emptyState.style.display = 'block';
+                    return;
+                }
+
+                emptyState.style.display = 'none';
+                container.innerHTML = this.filteredCampaigns.map(campaign => this.createCampaignCard(campaign)).join('');
+            }
+
+            createCampaignCard(campaign) {
+                const successRate = campaign.total_recipients > 0 
+                    ? ((campaign.successful_sends / campaign.total_recipients) * 100).toFixed(1)
+                    : 0;
+
+                const statusClass = campaign.failed_sends === 0 ? 'success' : 
+                                   campaign.successful_sends > 0 ? 'warning' : 'danger';
+
+                const statusText = campaign.failed_sends === 0 ? 'Success' : 
+                                  campaign.successful_sends > 0 ? 'Partial' : 'Failed';
+
+                return `
+                    <div class="campaign-card mb-3" style="background: rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.2);">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="text-white mb-2">
+                                    <i class="fas fa-comment me-2"></i>
+                                    ${campaign.message.substring(0, 100)}${campaign.message.length > 100 ? '...' : ''}
+                                </h6>
+                                <div class="campaign-meta">
+                                    <span class="badge bg-${statusClass} me-2">${statusText}</span>
+                                    <span class="text-muted me-3">
+                                        <i class="fas fa-users me-1"></i>
+                                        ${campaign.total_recipients} recipients
+                                    </span>
+                                    <span class="text-muted me-3">
+                                        <i class="fas fa-clock me-1"></i>
+                                        ${new Date(campaign.created_at).toLocaleDateString()}
+                                    </span>
+                                    <span class="text-muted">
+                                        <i class="fas fa-dollar-sign me-1"></i>
+                                        $${campaign.total_cost.toFixed(2)}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="campaign-stats mb-2">
+                                    <span class="text-success">${campaign.successful_sends} sent</span>
+                                    ${campaign.failed_sends > 0 ? `<span class="text-danger ms-2">${campaign.failed_sends} failed</span>` : ''}
+                                </div>
+                                <div class="mb-2">
+                                    <small class="text-muted">Success Rate: ${successRate}%</small>
+                                </div>
+                                <button class="btn btn-outline-primary btn-sm" onclick="viewCampaign('${campaign.id}')">
+                                    <i class="fas fa-eye me-1"></i>
+                                    View Details
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            viewCampaign(campaignId) {
+                const campaign = this.campaigns.find(c => c.id === campaignId);
+                if (!campaign) return;
+
+                const modal = new bootstrap.Modal(document.getElementById('campaignModal'));
+                const modalContent = document.getElementById('modalContent');
+
+                modalContent.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-white mb-3">Campaign Information</h6>
+                            <div class="detail-item mb-2">
+                                <strong class="text-muted">Campaign ID:</strong>
+                                <span class="text-white ms-2">${campaign.id}</span>
+                            </div>
+                            <div class="detail-item mb-2">
+                                <strong class="text-muted">Created:</strong>
+                                <span class="text-white ms-2">${new Date(campaign.created_at).toLocaleString()}</span>
+                            </div>
+                            <div class="detail-item mb-2">
+                                <strong class="text-muted">Total Recipients:</strong>
+                                <span class="text-white ms-2">${campaign.total_recipients}</span>
+                            </div>
+                            <div class="detail-item mb-2">
+                                <strong class="text-muted">Total Cost:</strong>
+                                <span class="text-white ms-2">$${campaign.total_cost.toFixed(2)}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-white mb-3">Delivery Statistics</h6>
+                            <div class="detail-item mb-2">
+                                <strong class="text-success">Successful:</strong>
+                                <span class="text-white ms-2">${campaign.successful_sends}</span>
+                            </div>
+                            <div class="detail-item mb-2">
+                                <strong class="text-danger">Failed:</strong>
+                                <span class="text-white ms-2">${campaign.failed_sends}</span>
+                            </div>
+                            <div class="detail-item mb-2">
+                                <strong class="text-warning">Invalid Numbers:</strong>
+                                <span class="text-white ms-2">${campaign.invalid_numbers}</span>
+                            </div>
+                            <div class="detail-item mb-2">
+                                <strong class="text-info">Success Rate:</strong>
+                                <span class="text-white ms-2">${((campaign.successful_sends / campaign.total_recipients) * 100).toFixed(1)}%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <h6 class="text-white mb-3">Message Content</h6>
+                        <div class="message-content p-3" style="background: rgba(255, 255, 255, 0.1); border-radius: 10px; color: white;">
+                            ${campaign.message}
+                        </div>
+                    </div>
+                    ${campaign.invalid_numbers_list && campaign.invalid_numbers_list.length > 0 ? `
+                        <div class="mt-4">
+                            <h6 class="text-warning mb-3">Invalid Numbers</h6>
+                            <div class="invalid-numbers">
+                                ${campaign.invalid_numbers_list.map(num => `<span class="badge bg-warning text-dark me-1 mb-1">${num}</span>`).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                `;
+
+                modal.show();
+            }
+        }
+
+        // Global functions
+        function viewCampaign(campaignId) {
+            window.campaignManager.viewCampaign(campaignId);
+        }
+
+        function exportData() {
+            const data = window.smsStorage.exportData();
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `sms_campaigns_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function clearAllData() {
+            if (confirm('Are you sure you want to delete all campaign data? This action cannot be undone.')) {
+                window.smsStorage.clearData();
+                window.campaignManager.loadCampaigns();
+                window.campaignManager.displayCampaigns();
+            }
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.campaignManager = new CampaignManager();
+        });
+    </script>
+</body>
+</html>

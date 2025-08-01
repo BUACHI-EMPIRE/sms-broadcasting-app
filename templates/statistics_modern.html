@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistics - Modern SMS Broadcasting</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark glass-nav fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold d-flex align-items-center" href="{{ url_for('index') }}">
+                <div class="brand-icon">
+                    <i class="fas fa-paper-plane"></i>
+                </div>
+                <span class="ms-2">SMS Broadcaster</span>
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('index') }}">
+                    <i class="fas fa-home me-1"></i>Home
+                </a>
+                <a class="nav-link" href="{{ url_for('campaigns') }}">
+                    <i class="fas fa-list me-1"></i>Campaigns
+                </a>
+                <a class="nav-link active" href="{{ url_for('statistics') }}">
+                    <i class="fas fa-chart-bar me-1"></i>Statistics
+                </a>
+                <a class="nav-link" href="{{ url_for('users') }}">
+                    <i class="fas fa-users me-1"></i>Users
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="hero-section" style="padding: 120px 0 40px; margin-top: 80px;">
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <div class="hero-content">
+                        <h1 class="hero-title" style="font-size: 2.5rem;">
+                            <i class="fas fa-chart-line me-3"></i>
+                            SMS Analytics
+                        </h1>
+                        <p class="hero-subtitle">
+                            Track your SMS campaigns performance and insights
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container main-content">
+        <!-- Overall Statistics -->
+        <div class="glass-card mb-4">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fas fa-globe me-2"></i>
+                    Overall Statistics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="result-stats" id="overallStats">
+                    <!-- Stats will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="glass-card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title">
+                            <i class="fas fa-chart-line me-2"></i>
+                            Daily Messages Sent
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="dailyChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="glass-card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title">
+                            <i class="fas fa-chart-pie me-2"></i>
+                            Success vs Failed
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="successChart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cost Analysis -->
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="glass-card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title">
+                            <i class="fas fa-dollar-sign me-2"></i>
+                            Daily Costs
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="costChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="glass-card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title">
+                            <i class="fas fa-percentage me-2"></i>
+                            Success Rate Trend
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="successRateChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="glass-card">
+            <div class="card-header">
+                <h5 class="card-title">
+                    <i class="fas fa-clock me-2"></i>
+                    Recent Activity
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="recentActivity">
+                    <!-- Recent campaigns will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/localStorage.js') }}"></script>
+    <script>
+        class StatisticsManager {
+            constructor() {
+                this.charts = {};
+                this.init();
+            }
+
+            init() {
+                this.loadStatistics();
+                this.createCharts();
+                this.loadRecentActivity();
+            }
+
+            loadStatistics() {
+                const overallStats = window.smsStorage.getOverallStats();
+                this.displayOverallStats(overallStats);
+            }
+
+            displayOverallStats(stats) {
+                const container = document.getElementById('overallStats');
+                container.innerHTML = `
+                    <div class="stat-item">
+                        <div class="stat-value text-info">${stats.total_campaigns}</div>
+                        <div class="stat-label">Total Campaigns</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value text-primary">${stats.total_messages}</div>
+                        <div class="stat-label">Messages Sent</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value text-success">${stats.total_successful}</div>
+                        <div class="stat-label">Successful</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value text-danger">${stats.total_failed}</div>
+                        <div class="stat-label">Failed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value text-warning">${stats.success_rate.toFixed(1)}%</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value text-secondary">$${stats.total_cost.toFixed(2)}</div>
+                        <div class="stat-label">Total Cost</div>
+                    </div>
+                `;
+            }
+
+            createCharts() {
+                const dailyStats = window.smsStorage.getDailyStats(30);
+                
+                if (dailyStats.length === 0) {
+                    this.showNoDataMessage();
+                    return;
+                }
+
+                this.createDailyChart(dailyStats);
+                this.createSuccessChart();
+                this.createCostChart(dailyStats);
+                this.createSuccessRateChart(dailyStats);
+            }
+
+            createDailyChart(dailyStats) {
+                const ctx = document.getElementById('dailyChart').getContext('2d');
+                
+                const dates = dailyStats.map(stat => new Date(stat.date).toLocaleDateString()).reverse();
+                const messages = dailyStats.map(stat => stat.total_messages_sent).reverse();
+                const successful = dailyStats.map(stat => stat.total_successful).reverse();
+                const failed = dailyStats.map(stat => stat.total_failed).reverse();
+
+                this.charts.daily = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: dates,
+                        datasets: [
+                            {
+                                label: 'Total Messages',
+                                data: messages,
+                                borderColor: 'rgba(102, 126, 234, 1)',
+                                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                                fill: true,
+                                tension: 0.4
+                            },
+                            {
+                                label: 'Successful',
+                                data: successful,
+                                borderColor: 'rgba(34, 197, 94, 1)',
+                                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                                fill: true,
+                                tension: 0.4
+                            },
+                            {
+                                label: 'Failed',
+                                data: failed,
+                                borderColor: 'rgba(239, 68, 68, 1)',
+                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                fill: true,
+                                tension: 0.4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: 'white'
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            },
+                            y: {
+                                ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            createSuccessChart() {
+                const ctx = document.getElementById('successChart').getContext('2d');
+                const overallStats = window.smsStorage.getOverallStats();
+
+                this.charts.success = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Successful', 'Failed'],
+                        datasets: [{
+                            data: [overallStats.total_successful, overallStats.total_failed],
+                            backgroundColor: [
+                                'rgba(34, 197, 94, 0.8)',
+                                'rgba(239, 68, 68, 0.8)'
+                            ],
+                            borderColor: [
+                                'rgba(34, 197, 94, 1)',
+                                'rgba(239, 68, 68, 1)'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: 'white'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            createCostChart(dailyStats) {
+                const ctx = document.getElementById('costChart').getContext('2d');
+                
+                const dates = dailyStats.map(stat => new Date(stat.date).toLocaleDateString()).reverse();
+                const costs = dailyStats.map(stat => stat.total_cost).reverse();
+
+                this.charts.cost = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: dates,
+                        datasets: [{
+                            label: 'Daily Cost ($)',
+                            data: costs,
+                            backgroundColor: 'rgba(245, 158, 11, 0.8)',
+                            borderColor: 'rgba(245, 158, 11, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: 'white'
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            },
+                            y: {
+                                ticks: { 
+                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    callback: function(value) {
+                                        return '$' + value.toFixed(2);
+                                    }
+                                },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            createSuccessRateChart(dailyStats) {
+                const ctx = document.getElementById('successRateChart').getContext('2d');
+                
+                const dates = dailyStats.map(stat => new Date(stat.date).toLocaleDateString()).reverse();
+                const successRates = dailyStats.map(stat => {
+                    return stat.total_messages_sent > 0 
+                        ? (stat.total_successful / stat.total_messages_sent * 100)
+                        : 0;
+                }).reverse();
+
+                this.charts.successRate = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: dates,
+                        datasets: [{
+                            label: 'Success Rate (%)',
+                            data: successRates,
+                            borderColor: 'rgba(79, 172, 254, 1)',
+                            backgroundColor: 'rgba(79, 172, 254, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: 'white'
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: { color: 'rgba(255, 255, 255, 0.7)' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            },
+                            y: {
+                                min: 0,
+                                max: 100,
+                                ticks: { 
+                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    callback: function(value) {
+                                        return value + '%';
+                                    }
+                                },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            loadRecentActivity() {
+                const campaigns = window.smsStorage.getCampaigns().slice(0, 5);
+                const container = document.getElementById('recentActivity');
+
+                if (campaigns.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-3">
+                            <p class="text-muted">No recent activity</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = campaigns.map(campaign => {
+                    const successRate = campaign.total_recipients > 0 
+                        ? ((campaign.successful_sends / campaign.total_recipients) * 100).toFixed(1)
+                        : 0;
+
+                    return `
+                        <div class="activity-item mb-3 p-3" style="background: rgba(255, 255, 255, 0.1); border-radius: 10px;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-white mb-1">
+                                        ${campaign.message.substring(0, 60)}${campaign.message.length > 60 ? '...' : ''}
+                                    </h6>
+                                    <small class="text-muted">
+                                        ${new Date(campaign.created_at).toLocaleString()} • 
+                                        ${campaign.total_recipients} recipients • 
+                                        ${successRate}% success rate
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    <div class="text-success">${campaign.successful_sends}</div>
+                                    <small class="text-muted">sent</small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            showNoDataMessage() {
+                const chartContainers = ['dailyChart', 'successChart', 'costChart', 'successRateChart'];
+                
+                chartContainers.forEach(containerId => {
+                    const container = document.getElementById(containerId).parentElement;
+                    container.innerHTML = `
+                        <div class="text-center py-5">
+                            <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                            <h6 class="text-white">No data available</h6>
+                            <p class="text-muted">Start sending SMS campaigns to see analytics</p>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new StatisticsManager();
+        });
+    </script>
+</body>
+</html>

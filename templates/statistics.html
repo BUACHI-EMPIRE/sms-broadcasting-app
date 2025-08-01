@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistics - Bulk SMS Broadcasting</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">
+                <i class="fas fa-paper-plane me-2"></i>
+                Bulk SMS Broadcaster
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('index') }}">
+                    <i class="fas fa-home me-1"></i>Home
+                </a>
+                <a class="nav-link" href="{{ url_for('campaigns') }}">
+                    <i class="fas fa-list me-1"></i>Campaigns
+                </a>
+                <a class="nav-link active" href="{{ url_for('statistics') }}">
+                    <i class="fas fa-chart-bar me-1"></i>Statistics
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-5 pt-4">
+        <div class="row">
+            <div class="col-12">
+                <!-- Header -->
+                <div class="mb-4">
+                    <h1 class="display-5 fw-bold text-primary">
+                        <i class="fas fa-chart-bar me-3"></i>
+                        SMS Statistics
+                    </h1>
+                    <p class="text-muted">Track your SMS campaigns performance and costs</p>
+                </div>
+
+                <!-- Overall Statistics -->
+                <div class="card shadow-lg border-0 rounded-4 mb-4">
+                    <div class="card-header bg-gradient-primary text-white py-3">
+                        <h5 class="mb-0">
+                            <i class="fas fa-globe me-2"></i>
+                            Overall Statistics
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-4">
+                            <div class="col-md-3">
+                                <div class="stat-card bg-primary text-white rounded-3 p-4 text-center h-100">
+                                    <i class="fas fa-bullhorn fa-2x mb-3"></i>
+                                    <div class="fw-bold fs-2">{{ overall_stats.total_campaigns }}</div>
+                                    <div>Total Campaigns</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card bg-info text-white rounded-3 p-4 text-center h-100">
+                                    <i class="fas fa-paper-plane fa-2x mb-3"></i>
+                                    <div class="fw-bold fs-2">{{ overall_stats.total_messages|default(0) }}</div>
+                                    <div>Messages Sent</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card bg-success text-white rounded-3 p-4 text-center h-100">
+                                    <i class="fas fa-check-circle fa-2x mb-3"></i>
+                                    <div class="fw-bold fs-2">{{ overall_stats.success_rate|default(0)|round(1) }}%</div>
+                                    <div>Success Rate</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card bg-warning text-dark rounded-3 p-4 text-center h-100">
+                                    <i class="fas fa-dollar-sign fa-2x mb-3"></i>
+                                    <div class="fw-bold fs-2">${{ overall_stats.total_cost|default(0)|round(2) }}</div>
+                                    <div>Total Cost</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Success/Failure Breakdown -->
+                        <div class="row mt-4">
+                            <div class="col-md-6">
+                                <div class="border rounded p-3">
+                                    <h6 class="text-success fw-bold mb-2">
+                                        <i class="fas fa-check me-2"></i>Successful Messages
+                                    </h6>
+                                    <div class="fs-4 fw-bold text-success">{{ overall_stats.total_successful|default(0) }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="border rounded p-3">
+                                    <h6 class="text-danger fw-bold mb-2">
+                                        <i class="fas fa-times me-2"></i>Failed Messages
+                                    </h6>
+                                    <div class="fs-4 fw-bold text-danger">{{ overall_stats.total_failed|default(0) }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Daily Statistics -->
+                {% if daily_stats %}
+                <div class="card shadow-lg border-0 rounded-4">
+                    <div class="card-header bg-gradient-primary text-white py-3">
+                        <h5 class="mb-0">
+                            <i class="fas fa-calendar-alt me-2"></i>
+                            Daily Statistics (Last 30 Days)
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Campaigns</th>
+                                        <th>Messages Sent</th>
+                                        <th>Successful</th>
+                                        <th>Failed</th>
+                                        <th>Success Rate</th>
+                                        <th>Cost</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for stat in daily_stats %}
+                                    <tr>
+                                        <td class="fw-bold">{{ stat.date.strftime('%Y-%m-%d') }}</td>
+                                        <td>
+                                            <span class="badge bg-primary">{{ stat.total_campaigns }}</span>
+                                        </td>
+                                        <td>{{ stat.total_messages_sent|default(0) }}</td>
+                                        <td>
+                                            <span class="text-success fw-bold">{{ stat.total_successful|default(0) }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-danger fw-bold">{{ stat.total_failed|default(0) }}</span>
+                                        </td>
+                                        <td>
+                                            {% set daily_success_rate = (stat.total_successful / stat.total_messages_sent * 100) if stat.total_messages_sent > 0 else 0 %}
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar {% if daily_success_rate >= 80 %}bg-success{% elif daily_success_rate >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                                                     role="progressbar" style="width: {{ daily_success_rate }}%">
+                                                    {{ daily_success_rate|round(1) }}%
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if stat.total_cost > 0 %}
+                                                <span class="text-success fw-bold">${{ stat.total_cost|round(2) }}</span>
+                                            {% else %}
+                                                <span class="text-muted">$0.00</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="card shadow-lg border-0 rounded-4">
+                    <div class="card-header bg-gradient-primary text-white py-3">
+                        <h5 class="mb-0">
+                            <i class="fas fa-calendar-alt me-2"></i>
+                            Daily Statistics
+                        </h5>
+                    </div>
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No statistics available yet</h5>
+                        <p class="text-muted">Statistics will appear here after you send your first SMS campaign</p>
+                        <a href="{{ url_for('index') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>
+                            Create First Campaign
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
